@@ -2,14 +2,11 @@ import os
 import shutil
 
 import json
-from collections import defaultdict
 
-import matplotlib.pyplot as plt
 import torch
 from tensordict.nn import TensorDictModule
 from tensordict.nn.distributions import NormalParamExtractor
 from torch import nn
-from torch.distributions import Categorical
 
 from torchrl.collectors import SyncDataCollector
 from torchrl.data.replay_buffers import ReplayBuffer
@@ -25,7 +22,6 @@ from torchrl.objectives.value import GAE
 from tqdm import tqdm
 
 from tensordict import TensorDict
-from torchrl.envs.utils import step_mdp
 
 from datetime import datetime 
 
@@ -173,7 +169,7 @@ class PPOAgent:
         self.replayBuffer = ReplayBuffer(
             storage=LazyTensorStorage(max_size=self.framesPerBatch),
             sampler=SamplerWithoutReplacement(),
-            pin_memory=True
+            pin_memory=self.device == "cuda"
         )
 
         self.advantageModule = GAE(

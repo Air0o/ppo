@@ -7,6 +7,8 @@ logging.disable(logging.INFO)
 
 from ppo import PPOAgent
 
+import platform
+
 from torchrl.envs.libs.gym import GymWrapper, GymEnv
 import gymnasium as gym
 
@@ -47,6 +49,10 @@ def train(args:dict):
         agent.save()
 
 
+    if platform.system() == "Linux":
+        print("Skipping inference on Linux")
+        return
+    
     env = gym.make(args["env_name"], render_mode="human")
 
     while True:
