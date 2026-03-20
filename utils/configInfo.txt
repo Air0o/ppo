@@ -1,0 +1,50 @@
+PPO Hyperparameters - Quick Reference
+=====================================
+
+Parameter           | Brief Description                                      | Effect of Increasing                                      | Effect of Decreasing
+--------------------|--------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------
+hidden_layers       | Number of hidden layers in actor & critic networks     | Higher capacity → can solve harder tasks                  | Lower capacity → faster training, less memory, risk of underfitting
+                    |                                                        | but slower training, more memory, risk of instability     |
+hidden_layer_size   | Number of neurons per hidden layer                     | Wider networks → better approximation, often better perf  | Narrower networks → faster, lower memory, may miss complex patterns
+                    |                                                        | but more compute/memory                                   |
+epochs              | Optimization passes over the batch per update          | More value from each batch → often faster convergence     | Quicker updates, less overfitting to recent data
+                    |                                                        | but risk of overfitting the batch / policy drift          |
+total_frames        | Total environment steps collected during whole training| Longer training → usually higher final performance        | Faster experiment, but may stop at suboptimal policy
+                    |                                                        |                                                           |  
+frames_per_batch    | Steps collected before each policy update (rollout)    | More accurate advantages → lower variance, more stability | More frequent updates → faster adaptation
+                    |                                                        | but fewer updates/sec, higher memory                      | but noisier advantages
+sub_batch_size      | Mini-batch size inside each epoch                      | Smoother gradients → often faster & more stable convergence| Noisier gradients → can escape bad minima, lower memory
+                    |                                                        | but higher memory, less stochasticity                     |
+entropy (ent_coef)  | Entropy bonus coefficient                              | Stronger exploration → helps sparse / deceptive tasks     | Faster exploitation → quicker learning but risks local optima
+                    |                                                        | prevents premature collapse                               |
+epsilon (clip_range)| PPO clipping range (~0.2 default)                      | Larger policy steps allowed → faster learning             | Very conservative updates → much more stable
+                    |                                                        | but higher risk of collapse                               | but slower progress
+gamma               | Discount factor (0 < γ ≤ 1)                            | Values future more → good for long-horizon tasks          | Myopic policy → more stable in short-horizon / noisy tasks
+                    |                                                        | but higher variance, harder credit assignment             | ignores distant rewards
+learning_rate       | Optimizer step size                                    | Faster learning & adaptation                              | Very stable, gradual improvement
+                    |                                                        | but risk of overshooting / divergence                     | but can be painfully slow
+lambda (GAE-λ)      | Generalized Advantage Estimation λ (~0.95 default)     | Lower bias, higher variance advantages                    | Higher bias, lower variance → more stable in noisy envs
+                    |                                                        | good when environment is low-noise                        |
+
+Quick tuning guide:
+-------------------
+Start with defaults:
+  epochs=10
+  frames_per_batch=2048
+  sub_batch_size=64
+  entropy=0.0
+  epsilon=0.2
+  gamma=0.99
+  learning_rate=3e-4
+  lambda=0.95
+
+Common adjustments:
+- Training unstable / crashing           → lower learning_rate, lower epsilon, slightly increase entropy
+- Learning too slow / stuck early        → increase learning_rate, increase frames_per_batch
+- Policy collapses late in training      → lower epochs (4–6), tighter epsilon (0.1–0.15), more entropy
+- Not exploring enough                   → increase entropy coef (0.005–0.02)
+- Very noisy value estimates             → increase lambda (0.97–0.99) or larger rollouts
+
+Always watch:
+- Policy entropy (should decrease slowly, not crash to zero early)
+- Value function explained variance (should go toward 1)
