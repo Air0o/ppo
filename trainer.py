@@ -77,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--inference-only", action="store_true")
     parser.add_argument("--force-device")
+    parser.add_argument("--verbose")
 
     args = parser.parse_args()
 
@@ -92,6 +93,7 @@ if __name__ == "__main__":
         "resume": args.resume or args.inference_only,
         "inference_only": args.inference_only,
         "force_device": args.force_device,
+        "verbose": args.verbose,
     }
 
     train(args)

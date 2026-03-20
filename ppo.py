@@ -36,10 +36,10 @@ def make_mlp(hidden_size: int, out_size: int, num_layers: int, device: str) -> n
     return nn.Sequential(*layers)
 
 class PPOAgent:
-    def __init__(self, baseEnv: gym.Env, settings:dict, args:dict, verbose=1):
+    def __init__(self, baseEnv: gym.Env, settings:dict, args:dict):
         self.name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") if args["name"] is None else args["name"]
         self.continueFrom = args["continue_from_name"]
-        self.verbose = verbose
+        self.verbose = int(args["verbose"]) if args["verbose"] is not None else 2
         self.device = args["force_device"] if args["force_device"] is not None else "cpu"
         self.savePath = f"saves/{self.name}"
         self.logPath = f"logs/{self.name}"
@@ -203,7 +203,7 @@ class PPOAgent:
         
 
 
-        if self.verbose == 1:
+        if self.verbose != 0:
             print(f"Initialized PPO agent on device '{self.device}' with parameters:")
             print(f"Action type: {"discrete" if self.isDiscrete else "continuous"}")
             print(f"Action spec: {self.env.action_spec}")
@@ -217,8 +217,11 @@ class PPOAgent:
     
     def train(self):
         try:
-            if self.verbose == 1:
-                pbar = tqdm(total=self.totalFrames)
+            if self.verbose != 0:
+                pbar = tqdm(
+                    total=self.totalFrames,
+                    ncols=0 if self.verbose == 1 else None
+                )
                 fileWriter = tf.summary.create_file_writer(self.logPath)
                 fileWriter.set_as_default()
 
@@ -252,18 +255,19 @@ class PPOAgent:
                 self.averageRewards.append(rewardData)
 
                 numel = tensordict_data.numel()
-                if self.verbose == 1:
+                if self.verbose != 0:
                     step = self.startingStep + numel * i
                     tf.summary.scalar("Average reward", data = rewardData, step=step)
                     tf.summary.scalar("Max episode length", data = maxEpLenthData, step=step)
                     tf.summary.scalar("Average episode length", data = avgEpLenthData, step=step)
                     tf.summary.scalar("Learning rate", data = lrData, step=step)
-                
-                    cum_reward_str = f"average reward={rewardData: 4.4f}"
-                    stepcount_str = f"Max episode length: {maxEpLenthData}"
-                    lr_str = f"lr:{lrData: 4.4f}"
 
-                    pbar.set_description(", ".join([cum_reward_str, stepcount_str, lr_str]))
+                    if self.verbose == 2:
+                        cum_reward_str = f"average reward={rewardData: 4.4f}"
+                        stepcount_str = f"Max episode length: {maxEpLenthData}"
+                        lr_str = f"lr:{lrData: 4.4f}"
+                        pbar.set_description(", ".join([cum_reward_str, stepcount_str, lr_str]))
+                        
                     pbar.update(numel)
                     
                 self.scheduler.step()
@@ -317,7 +321,7 @@ class PPOAgent:
             }
             json.dump(data, file)
 
-        if self.verbose == 1:
+        if self.verbose != 0:
             print(f"Saved agent to '{self.savePath}'")
 
     def _load(self):
@@ -331,6 +335,6 @@ class PPOAgent:
         self.env.transform[0].scale = stats["scale"]
 
         self.valueNet = torch.load(f"saves/{self.continueFrom}/value.pt", weights_only=False)
-        if self.verbose == 1:
+        if self.verbose != 0:
             print(f"Loaded agent from 'saves/{self.continueFrom}'")
 
