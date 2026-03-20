@@ -322,7 +322,7 @@ class PPOAgent:
             json.dump(data, file)
 
         if self.verbose == 1:
-            print(f"Saved agent to {self.savePath}")
+            print(f"Saved agent to '{self.savePath}'")
 
     def _load(self):
         with open(f"saves/{self.continueFrom}/stats.json") as file:
@@ -335,4 +335,6 @@ class PPOAgent:
         self.env.transform[0].scale = stats["scale"]
 
         self.valueNet = torch.load(f"saves/{self.continueFrom}/value.pt", weights_only=False)
+        if self.verbose == 1:
+            print(f"Loaded agent from 'saves/{self.continueFrom}'")
 
