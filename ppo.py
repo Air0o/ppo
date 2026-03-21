@@ -8,6 +8,8 @@ from tensordict.nn import TensorDictModule
 from tensordict.nn.distributions import NormalParamExtractor
 from torch import nn
 
+from math import inf
+
 from torchrl.collectors import SyncDataCollector
 from torchrl.data.replay_buffers import ReplayBuffer
 from torchrl.data.replay_buffers.samplers import SamplerWithoutReplacement
@@ -225,9 +227,12 @@ class PPOAgent:
                 fileWriter = tf.summary.create_file_writer(self.logPath)
                 fileWriter.set_as_default()
 
-            self.averageRewards = []
+            lastReward = -inf
 
             for i, tensordict_data in enumerate(self.collector):
+                if i % 25 == 0:
+                    self.save()
+
                 self.advantageModule(tensordict_data)
                 data_view = tensordict_data.reshape(-1)
                 self.replayBuffer.extend(data_view.cpu())
@@ -252,7 +257,11 @@ class PPOAgent:
                 avgEpLenthData = tensordict_data["next", "step_count"].float().mean().item()
                 lrData = self.optim.param_groups[0]["lr"]
 
-                self.averageRewards.append(rewardData)
+                saveStr = ""
+                if rewardData > lastReward and i % 2 == 0:
+                    lastReward = rewardData
+                    self.save()
+                    saveStr = f"Saved agent to '{self.savePath}'"
 
                 numel = tensordict_data.numel()
                 if self.verbose != 0:
@@ -266,7 +275,7 @@ class PPOAgent:
                         cum_reward_str = f"average reward={rewardData: 4.4f}"
                         stepcount_str = f"Max episode length: {maxEpLenthData}"
                         lr_str = f"lr:{lrData: 4.4f}"
-                        pbar.set_description(", ".join([cum_reward_str, stepcount_str, lr_str]))
+                        pbar.set_description(", ".join([cum_reward_str, stepcount_str, lr_str, saveStr]))
                         
                     pbar.update(numel)
                     
@@ -320,9 +329,6 @@ class PPOAgent:
                 "scheduler_t_max": self.scheduler.T_max,
             }
             json.dump(data, file)
-
-        if self.verbose != 0:
-            print(f"Saved agent to '{self.savePath}'")
 
     def _load(self):
         with open(f"saves/{self.continueFrom}/stats.json") as file:

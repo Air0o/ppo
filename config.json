@@ -1,13 +1,13 @@
 {
-    "hidden_layers": 3,
-    "hidden_layer_size": 600,
+    "hidden_layers": 2,
+    "hidden_layer_size": 8,
     "epochs": 8,
-    "total_frames": 10000000,
-    "frames_per_batch": 2800,
-    "sub_batch_size": 256,
-    "entropy": 0.015, 
-    "epsilon": 0.14,
-    "gamma": 0.98,
-    "learning_rate": 0.00035,
+    "total_frames": 100000,
+    "frames_per_batch": 512,
+    "sub_batch_size": 32,
+    "entropy": 0.01, 
+    "epsilon": 0.15,
+    "gamma": 0.97,
+    "learning_rate": 0.0003,
     "lambda": 0.95
 }
