@@ -1,0 +1,14 @@
+{
+    "hidden_layers": 3,
+    "hidden_layer_size": 1024,
+    "pyramid": true,
+    "epochs": 10,
+    "total_frames": 25000000,
+    "frames_per_batch": 16384,
+    "sub_batch_size": 1024,
+    "entropy": 0.07,
+    "epsilon": 0.2,
+    "gamma": 0.99,
+    "learning_rate": 0.0003,
+    "lambda": 0.95
+}

@@ -8,6 +8,8 @@ from tensordict.nn import TensorDictModule
 from tensordict.nn.distributions import NormalParamExtractor
 from torch import nn
 
+from utils.paramCalculator import getParams
+
 from math import inf
 
 from torchrl.collectors import SyncDataCollector
@@ -29,11 +31,14 @@ from datetime import datetime
 
 import tensorflow as tf
 
-def make_mlp(hidden_size: int, out_size: int, num_layers: int, device: str) -> nn.Sequential:
+def make_mlp(hidden_size: int, out_size: int, num_layers: int, device: str, pyramid: bool | None = False) -> nn.Sequential:
+    currentSize = hidden_size
     layers = []
     for _ in range(num_layers):
-        layers.append(nn.LazyLinear(hidden_size, device=device))
+        layers.append(nn.LazyLinear(currentSize, device=device))
         layers.append(nn.Tanh())
+        if pyramid:
+            currentSize //= 2
     layers.append(nn.LazyLinear(out_size, device=device))
     return nn.Sequential(*layers)
 
@@ -93,7 +98,13 @@ class PPOAgent:
             self._load()
         else:
             self.env.transform[0].init_stats(num_iter=1000, reduce_dim=0, cat_dim=0)
-            self.valueNet = make_mlp(hiddenLayerSize, 1, hiddenLayers, self.device)
+            self.valueNet = make_mlp(
+                hiddenLayerSize, 
+                1, 
+                hiddenLayers, 
+                self.device,
+                pyramid=settings["pyramid"],
+            )
 
         check_env_specs(self.env)
         obs_size = self.env.observation_spec["observation"].shape[-1]
@@ -102,7 +113,13 @@ class PPOAgent:
         if self.isDiscrete:
             n_actions = baseEnv.action_space.n
             if self.continueFrom is None:
-                self.actorNet = make_mlp(hiddenLayerSize, n_actions, hiddenLayers, self.device)
+                self.actorNet = make_mlp(
+                    hiddenLayerSize, 
+                    n_actions, 
+                    hiddenLayers, 
+                    self.device,
+                    pyramid=settings["pyramid"],
+                )
                 self.actorNet(dummy)
                 self.valueNet(dummy)
             else:
@@ -128,6 +145,7 @@ class PPOAgent:
                     2 * self.env.action_spec.shape[-1],  # loc + scale
                     hiddenLayers,
                     self.device,
+                    pyramid=settings["pyramid"],
                 )
                 self.actorNet.append(NormalParamExtractor())
                 self.actorNet(dummy)
@@ -206,15 +224,21 @@ class PPOAgent:
 
 
         if self.verbose != 0:
-            print(f"Initialized PPO agent on device '{self.device}' with parameters:")
-            print(f"Action type: {"discrete" if self.isDiscrete else "continuous"}")
             print(f"Action spec: {self.env.action_spec}")
             print(f"Observation spec: {self.env.observation_spec}")
-            print(f"Hidden layers: {hiddenLayers}")
-            print(f"Hidden layer size (neurons per layer): {hiddenLayerSize}")
+            print(f"Initialized PPO agent on device '{self.device}'")
             print(f"Total steps: {self.totalFrames}")
             print(f"Steps per batch: {self.framesPerBatch}")
             print(f"Steps per mini batch: {self.subBatchSize}")
+            print(f"Action type: {"discrete" if self.isDiscrete else "continuous"}")
+            print(f"Hidden layers: {hiddenLayers}")
+            print(f"Pyramid: {settings["pyramid"]}")
+            print("Layers sizes: ")
+            current = hiddenLayerSize
+            for i in range(hiddenLayers):
+                print(f"{current} {"- " if i != (hiddenLayers-1) else "\n"}", end="")
+                if settings["pyramid"]:
+                    current //= 2
     
     
     def train(self):
