@@ -1,7 +1,7 @@
 import yaml
 
 def getConfig() -> dict:
-    with open("config.jaml", "r") as file:
+    with open("config.yaml", "r") as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
     return data
 
