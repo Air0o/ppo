@@ -5,14 +5,14 @@ os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 os.environ["RL_WARNINGS"] = "0"
 logging.disable(logging.INFO)
 
-from ppo import PPOAgent
+from model.ppo import PPOAgent
 
 import platform
 
 from torchrl.envs.libs.gym import GymWrapper, GymEnv
 import gymnasium as gym
 
-from configReader import getConfig
+from utils.configReader import getConfig
 
 import torch
 import argparse

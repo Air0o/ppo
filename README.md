@@ -1,5 +1,12 @@
 # PPO
 
+Features:
+- Customizable network topology (depth and size)
+- Supports Gymnasium environments
+- Training on both CPU or CUDA
+- Logging via TensorBoard
+- Save/Load trained models
+- Inference to view training results
 
 # Network Configuration
 
