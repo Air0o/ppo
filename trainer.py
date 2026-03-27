@@ -67,7 +67,7 @@ def train(args:dict):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="Trainer",
-        description="Manager for training env and agent"
+        description="Manager for PPO model training"
     )
 
     parser.add_argument("env_name")

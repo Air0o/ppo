@@ -2,4 +2,3 @@ logs/
 saves/
 .venv/
 __pycache__/
-config.yaml

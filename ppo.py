@@ -31,14 +31,13 @@ from datetime import datetime
 
 import tensorflow as tf
 
-def make_mlp(hidden_size: int, out_size: int, num_layers: int, device: str, pyramid: bool | None = False) -> nn.Sequential:
-    currentSize = hidden_size
+def make_mlp(out_size: int, device: str, network_topology:list) -> nn.Sequential:
     layers = []
-    for _ in range(num_layers):
+
+    for currentSize in network_topology:
         layers.append(nn.LazyLinear(currentSize, device=device))
         layers.append(nn.Tanh())
-        if pyramid:
-            currentSize //= 2
+
     layers.append(nn.LazyLinear(out_size, device=device))
     return nn.Sequential(*layers)
 
@@ -58,8 +57,6 @@ class PPOAgent:
         self.framesPerBatch = settings["frames_per_batch"]
         self.subBatchSize = settings["sub_batch_size"]
         self.totalFrames = settings["total_frames"]
-        hiddenLayerSize = settings["hidden_layer_size"]
-        hiddenLayers = settings["hidden_layers"]
         learningRate = settings["learning_rate"]
         lmbda = settings["lambda"]
         entropy = settings["entropy"]
@@ -99,11 +96,9 @@ class PPOAgent:
         else:
             self.env.transform[0].init_stats(num_iter=1000, reduce_dim=0, cat_dim=0)
             self.valueNet = make_mlp(
-                hiddenLayerSize, 
-                1, 
-                hiddenLayers, 
-                self.device,
-                pyramid=settings["pyramid"],
+                out_size=1, 
+                device=self.device,
+                network_topology=settings["network_topology"]
             )
 
         check_env_specs(self.env)
@@ -114,11 +109,9 @@ class PPOAgent:
             n_actions = baseEnv.action_space.n
             if self.continueFrom is None:
                 self.actorNet = make_mlp(
-                    hiddenLayerSize, 
-                    n_actions, 
-                    hiddenLayers, 
-                    self.device,
-                    pyramid=settings["pyramid"],
+                    out_size=n_actions, 
+                    device=self.device,
+                    network_topology=settings["network_topology"]
                 )
                 self.actorNet(dummy)
                 self.valueNet(dummy)
@@ -141,11 +134,9 @@ class PPOAgent:
         else:
             if self.continueFrom is None:
                 self.actorNet = make_mlp(
-                    hiddenLayerSize,
-                    2 * self.env.action_spec.shape[-1],  # loc + scale
-                    hiddenLayers,
-                    self.device,
-                    pyramid=settings["pyramid"],
+                    out_size=2 * self.env.action_spec.shape[-1],  # loc + scale
+                    device=self.device,
+                    network_topology=settings["network_topology"]
                 )
                 self.actorNet.append(NormalParamExtractor())
                 self.actorNet(dummy)
@@ -226,19 +217,9 @@ class PPOAgent:
         if self.verbose != 0:
             print(f"Action spec: {self.env.action_spec}")
             print(f"Observation spec: {self.env.observation_spec}")
-            print(f"Initialized PPO agent on device '{self.device}'")
-            print(f"Total steps: {self.totalFrames}")
-            print(f"Steps per batch: {self.framesPerBatch}")
-            print(f"Steps per mini batch: {self.subBatchSize}")
+            print(f"Device '{self.device}'")
             print(f"Action type: {"discrete" if self.isDiscrete else "continuous"}")
-            print(f"Hidden layers: {hiddenLayers}")
-            print(f"Pyramid: {settings["pyramid"]}")
-            print("Layers sizes: ")
-            current = hiddenLayerSize
-            for i in range(hiddenLayers):
-                print(f"{current} {"- " if i != (hiddenLayers-1) else "\n"}", end="")
-                if settings["pyramid"]:
-                    current //= 2
+            print(f"Network topology: {settings["network_topology"]}")
     
     
     def train(self):
