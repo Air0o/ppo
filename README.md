@@ -1,5 +1,7 @@
 # PPO
 
+Proximal Policy Optimization is a policy gradient Reinforcement Learning algorithm that iteratively improves a policy by collecting trajectories, estimating advantages, and optimizing a clipped surrogate objective which prevents updates from straying too far from the current policy, ensuring stable training.
+
 Features:
 - Customizable network topology (depth and size)
 - Supports Gymnasium environments
