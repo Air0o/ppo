@@ -21,17 +21,17 @@ import gymnasium_robotics
 gym.register_envs(gymnasium_robotics)
 
 
-def initAgent(settings:dict, args:dict, env):
+def initAgent(config:dict, args:dict, env):
     agent = PPOAgent(
         baseEnv=env,
-        settings=settings,
+        config=config,
         args=args,
     )
     return agent
 
 
-def train(args:dict):
-    settings = getConfig()
+def train(args:dict) -> PPOAgent:
+    config = getConfig(args["config_path"])
 
     if args["force_device"] == "cuda" and not torch.cuda.is_available():
         raise Exception(f"Cannot force device '{args["force_device"]}' because it is unavailable")
@@ -42,7 +42,7 @@ def train(args:dict):
         )
 
     
-    agent = initAgent(settings=settings, env=env, args=args)
+    agent = initAgent(config=config, env=env, args=args)
 
     if not args["inference_only"]:
         agent.train()
@@ -51,7 +51,10 @@ def train(args:dict):
 
     if platform.system() == "Linux":
         print("Skipping inference on Linux")
-        return
+        return agent
+
+    if not args["show_result"]:
+        return agent
     
     env = gym.make(args["env_name"], render_mode="human")
 
@@ -62,7 +65,6 @@ def train(args:dict):
             action = agent.inference(obs)
             obs, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -78,6 +80,8 @@ if __name__ == "__main__":
     parser.add_argument("--inference-only", action="store_true")
     parser.add_argument("--force-device")
     parser.add_argument("--verbose")
+    parser.add_argument("--config")
+    parser.add_argument("--show-result", action="store_true")
 
     args = parser.parse_args()
 
@@ -94,6 +98,8 @@ if __name__ == "__main__":
         "inference_only": args.inference_only,
         "force_device": args.force_device,
         "verbose": args.verbose,
+        "config_path": args.config,
+        "show_result": args.show_result,
     }
 
     train(args)

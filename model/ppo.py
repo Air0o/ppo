@@ -52,7 +52,7 @@ def make_mlp(out_size: int, device: str, network_topology:list) -> nn.Sequential
 
 class PPOAgent:
     #region INIT
-    def __init__(self, baseEnv: gym.Env, settings:dict, args:dict):
+    def __init__(self, baseEnv: gym.Env, config:dict, args:dict):
         self.name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") if args["name"] is None else args["name"]
         self.continueFrom = args["continue_from_name"]
         self.verbose = int(args["verbose"]) if args["verbose"] is not None else 2
@@ -63,15 +63,15 @@ class PPOAgent:
         self.maxGradNorm = 1.0
         self.executedFrames = 0
 
-        self.epochs = settings["epochs"]
-        self.framesPerBatch = settings["frames_per_batch"]
-        self.subBatchSize = settings["sub_batch_size"]
-        self.totalFrames = settings["total_frames"]
-        learningRate = settings["learning_rate"]
-        lmbda = settings["lambda"]
-        entropy = settings["entropy"]
-        epsilon = settings["epsilon"]
-        gamma = settings["gamma"]
+        self.epochs = config["epochs"]
+        self.framesPerBatch = config["frames_per_batch"]
+        self.subBatchSize = config["sub_batch_size"]
+        self.totalFrames = config["total_frames"]
+        learningRate = config["learning_rate"]
+        lmbda = config["lambda"]
+        entropy = config["entropy"]
+        epsilon = config["epsilon"]
+        gamma = config["gamma"]
         force = args["force"]
         resume = args["resume"]
 
@@ -127,7 +127,7 @@ class PPOAgent:
             self.valueNet = make_mlp(
                 out_size=1, 
                 device=self.device,
-                network_topology=settings["network_topology"]
+                network_topology=config["network_topology"]
             )
         check_env_specs(self.env)
         obs_size = self.env.observation_spec[self.observationName].shape[-1]
@@ -139,7 +139,7 @@ class PPOAgent:
                 self.actorNet = make_mlp(
                     out_size=n_actions, 
                     device=self.device,
-                    network_topology=settings["network_topology"]
+                    network_topology=config["network_topology"]
                 )
                 self.actorNet(dummy)
                 self.valueNet(dummy)
@@ -164,7 +164,7 @@ class PPOAgent:
                 self.actorNet = make_mlp(
                     out_size=2 * self.env.action_spec.shape[-1],  # loc + scale
                     device=self.device,
-                    network_topology=settings["network_topology"]
+                    network_topology=config["network_topology"]
                 )
                 self.actorNet.append(NormalParamExtractor())
                 self.actorNet(dummy)
@@ -249,7 +249,7 @@ class PPOAgent:
             print(f"Observation spec: {self.env.observation_spec}")
             print(f"Device '{self.device}'")
             print(f"Action type: {"discrete" if self.isDiscrete else "continuous"}")
-            print(f"Network topology: {settings["network_topology"]}")
+            print(f"Network topology: {config["network_topology"]}")
     #endregion
     
     #region TRAIN
