@@ -73,7 +73,6 @@ class PPOAgent:
         epsilon = config["epsilon"]
         gamma = config["gamma"]
         force = args["force"]
-        resume = args["resume"]
 
         obs_spec = baseEnv.observation_spec
         if "pixels" in obs_spec.keys():
@@ -85,9 +84,6 @@ class PPOAgent:
             self.observationName = next(iter(obs_spec.keys()))
 
         self.isDiscrete = isinstance(baseEnv.action_space, gym.spaces.Discrete)
-
-        if resume:
-            self.continueFrom = self.name
 
         try:
             if os.path.exists(self.savePath):

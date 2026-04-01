@@ -71,12 +71,11 @@ if __name__ == "__main__":
     parser.add_argument("env_name")
     parser.add_argument("--name")
     parser.add_argument("--continue-from")
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("--resume", action="store_true")
-    parser.add_argument("--inference-only", action="store_true")
     parser.add_argument("--force-device")
     parser.add_argument("--verbose")
     parser.add_argument("--config")
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--inference-only", action="store_true")
     parser.add_argument("--show-result", action="store_true")
 
     args = parser.parse_args()
@@ -90,7 +89,6 @@ if __name__ == "__main__":
         "continue_from_name": args.continue_from,
         "name": args.name,
         "force": args.force,
-        "resume": args.resume or args.inference_only,
         "inference_only": args.inference_only,
         "force_device": args.force_device,
         "verbose": args.verbose,
