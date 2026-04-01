@@ -5,18 +5,14 @@ os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 os.environ["RL_WARNINGS"] = "0"
 logging.disable(logging.INFO)
 
-from model.ppo import PPOAgent
-
 import platform
-
-from torchrl.envs.libs.gym import GymWrapper, GymEnv
 import gymnasium as gym
-
-from utils.configReader import getConfig
-
 import torch
 import argparse
 import gymnasium_robotics
+from utils.configReader import getConfig
+from torchrl.envs.libs.gym import GymEnv
+from model.ppo import PPOAgent
 
 gym.register_envs(gymnasium_robotics)
 
@@ -34,14 +30,13 @@ def train(args:dict):
     settings = getConfig()
 
     if args["force_device"] == "cuda" and not torch.cuda.is_available():
-        raise Exception(f"Cannot force device '{args["force_device"]}' because it is unavailable")
+        raise Exception(f"Cannot use device '{args["force_device"]}' because it is unavailable")
     
     env = GymEnv(
-        args["env_name"], 
+        env_name=args["env_name"], 
         device=args["force_device"] if args["force_device"] is not None else "cpu"
-        )
+    )
 
-    
     agent = initAgent(settings=settings, env=env, args=args)
 
     if not args["inference_only"]:
