@@ -14,19 +14,19 @@ Features:
 
 # How to use
 
-#### Create Python virtual environment
+### Create Python virtual environment
 Run the `utils/initVenv` script and wait for all the packages to get installed.
 
-#### Start training
+### Start training
 With the venv active run the following command to start a new training session: 
-`python trainer.py [env name]`
-This will start a training session using a Gymnasium environment.
+`python trainer.py CartPole-v1`
+This will start a training session using the CartPole Gymnasium environment.
 
-#### Custom arguments
+### Custom arguments
 You can add the following flags to the script:
 `--name [name]` by default the name of the training session will be the current date and time.
 
-`--continue-from [name]` will and resume training of an already existing model in another session.
+`--continue-from [name]` will resume training of an already existing model in another session.
 
 `--force-device [device name]` will try to use a specific device.
 
@@ -38,7 +38,7 @@ You can add the following flags to the script:
 
 `--show-result` will show the results of the training sessions once it has ended. It is the equivalent of running the script with `--inference-only` after training has finished.
 
-#### View training statistics
+### View training statistics
 The default path for logs is `logs/[name]`.
 Run the following command to start a TensorBoard server to view them: `tensorboard --logdir logs`
 
