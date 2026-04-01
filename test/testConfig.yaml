@@ -1,0 +1,10 @@
+network_topology: [1]
+epochs: 1
+total_frames: 1
+frames_per_batch: 1
+sub_batch_size: 1
+entropy: 0.02
+epsilon: 0.2
+gamma: 0.99
+learning_rate: 0.0003
+lambda: 0.95

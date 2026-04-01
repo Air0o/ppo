@@ -9,7 +9,16 @@ from tensordict.nn.distributions import NormalParamExtractor
 from torch import nn
 
 from utils.paramCalculator import getParams
-
+from torchrl.envs.transforms import (
+    TransformedEnv,
+    ToTensorImage,
+    Resize,
+    GrayScale,
+    CatFrames,
+    RewardScaling,
+    StepCounter,
+    SqueezeTransform
+)
 from math import inf
 
 from torchrl.collectors import SyncDataCollector
@@ -42,7 +51,8 @@ def make_mlp(out_size: int, device: str, network_topology:list) -> nn.Sequential
     return nn.Sequential(*layers)
 
 class PPOAgent:
-    def __init__(self, baseEnv: gym.Env, settings:dict, args:dict):
+    #region INIT
+    def __init__(self, baseEnv: gym.Env, config:dict, args:dict):
         self.name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") if args["name"] is None else args["name"]
         self.continueFrom = args["continue_from_name"]
         self.verbose = int(args["verbose"]) if args["verbose"] is not None else 2
@@ -53,17 +63,26 @@ class PPOAgent:
         self.maxGradNorm = 1.0
         self.executedFrames = 0
 
-        self.epochs = settings["epochs"]
-        self.framesPerBatch = settings["frames_per_batch"]
-        self.subBatchSize = settings["sub_batch_size"]
-        self.totalFrames = settings["total_frames"]
-        learningRate = settings["learning_rate"]
-        lmbda = settings["lambda"]
-        entropy = settings["entropy"]
-        epsilon = settings["epsilon"]
-        gamma = settings["gamma"]
+        self.epochs = config["epochs"]
+        self.framesPerBatch = config["frames_per_batch"]
+        self.subBatchSize = config["sub_batch_size"]
+        self.totalFrames = config["total_frames"]
+        learningRate = config["learning_rate"]
+        lmbda = config["lambda"]
+        entropy = config["entropy"]
+        epsilon = config["epsilon"]
+        gamma = config["gamma"]
         force = args["force"]
         resume = args["resume"]
+
+        obs_spec = baseEnv.observation_spec
+        if "pixels" in obs_spec.keys():
+            self.observationName = "pixels"
+        elif "observation" in obs_spec.keys():
+            self.observationName = "observation"
+        else:
+            # fallback: grab the first key
+            self.observationName = next(iter(obs_spec.keys()))
 
         self.isDiscrete = isinstance(baseEnv.action_space, gym.spaces.Discrete)
 
@@ -81,28 +100,37 @@ class PPOAgent:
             os.makedirs(self.savePath)
         except Exception as e:
             print(e)
+        
+        transform = Compose(
+            ObservationNorm(in_keys=[self.observationName]),
+            DoubleToFloat(),
+            StepCounter(),
+        )
 
-        self.env = TransformedEnv(
-            baseEnv,
-            Compose(
-                ObservationNorm(in_keys=["observation"]),
+        if self.observationName == "pixels":
+            transform = Compose(
+                ToTensorImage(),
+                ObservationNorm(in_keys=[self.observationName]),
                 DoubleToFloat(),
                 StepCounter(),
-            ),
+            )
+        
+        self.env = TransformedEnv(
+            baseEnv,
+            transform=transform
         )
 
         if self.continueFrom is not None:
             self._load()
         else:
-            self.env.transform[0].init_stats(num_iter=1000, reduce_dim=0, cat_dim=0)
+            self.env.transform[0 if self.observationName == "observation" else 1].init_stats(num_iter=1000, reduce_dim=0, cat_dim=0, key=self.observationName)
             self.valueNet = make_mlp(
                 out_size=1, 
                 device=self.device,
-                network_topology=settings["network_topology"]
+                network_topology=config["network_topology"]
             )
-
         check_env_specs(self.env)
-        obs_size = self.env.observation_spec["observation"].shape[-1]
+        obs_size = self.env.observation_spec[self.observationName].shape[-1]
         dummy = torch.zeros(1, obs_size, device=self.device)
 
         if self.isDiscrete:
@@ -111,7 +139,7 @@ class PPOAgent:
                 self.actorNet = make_mlp(
                     out_size=n_actions, 
                     device=self.device,
-                    network_topology=settings["network_topology"]
+                    network_topology=config["network_topology"]
                 )
                 self.actorNet(dummy)
                 self.valueNet(dummy)
@@ -136,7 +164,7 @@ class PPOAgent:
                 self.actorNet = make_mlp(
                     out_size=2 * self.env.action_spec.shape[-1],  # loc + scale
                     device=self.device,
-                    network_topology=settings["network_topology"]
+                    network_topology=config["network_topology"]
                 )
                 self.actorNet.append(NormalParamExtractor())
                 self.actorNet(dummy)
@@ -147,7 +175,7 @@ class PPOAgent:
 
             self.policy_module = TensorDictModule(
                 self.actorNet,
-                in_keys=["observation"],
+                in_keys=[self.observationName],
                 out_keys=["loc", "scale"],
             )
             self.policy_module = ProbabilisticActor(
@@ -164,9 +192,10 @@ class PPOAgent:
 
         value_module = ValueOperator(
             module=self.valueNet, 
-            in_keys=["observation"]
+            in_keys=[self.observationName]
         )
 
+        #region collector
         self.collector = SyncDataCollector(
             self.env,
             self.policy_module,
@@ -175,6 +204,7 @@ class PPOAgent:
             split_trajs=False,
             device=self.device,
         )
+        #endregion
         
 
         self.replayBuffer = ReplayBuffer(
@@ -219,9 +249,10 @@ class PPOAgent:
             print(f"Observation spec: {self.env.observation_spec}")
             print(f"Device '{self.device}'")
             print(f"Action type: {"discrete" if self.isDiscrete else "continuous"}")
-            print(f"Network topology: {settings["network_topology"]}")
+            print(f"Network topology: {config["network_topology"]}")
+    #endregion
     
-    
+    #region TRAIN
     def train(self):
         try:
             if self.verbose != 0:
@@ -289,7 +320,9 @@ class PPOAgent:
 
         except KeyboardInterrupt:
             print("Keyboard interrupt")
+    #endregion
 
+    #region INFERENCE
     def inference(self, obs):
         if isinstance(obs, dict):
             obs = obs["observation"]
@@ -315,7 +348,9 @@ class PPOAgent:
         if self.isDiscrete:
             return action.argmax().item() 
         return action.numpy()
-    
+    #endregion
+
+    #region SAVE/LOAD
     def save(self):
         torch.save(self.actorNet, self.savePath + "/actor.pt")
         torch.save(self.valueNet, self.savePath + "/value.pt")
@@ -348,4 +383,4 @@ class PPOAgent:
         self.valueNet = torch.load(f"saves/{self.continueFrom}/value.pt", weights_only=False)
         if self.verbose != 0:
             print(f"Loaded agent from 'saves/{self.continueFrom}'")
-
+    #endregion

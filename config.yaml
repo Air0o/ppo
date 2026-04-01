@@ -1,8 +1,8 @@
-network_topology: [16, 4, 2]
-epochs: 10
-total_frames: 25000000
-frames_per_batch: 16384
-sub_batch_size: 1024
+network_topology: [32, 16]
+epochs: 8
+total_frames: 20000
+frames_per_batch: 1024
+sub_batch_size: 128
 entropy: 0.02
 epsilon: 0.2
 gamma: 0.99

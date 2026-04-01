@@ -1,7 +1,7 @@
 import yaml
 
-def getConfig() -> dict:
-    with open("config.yaml", "r") as file:
+def getConfig(path:str | None = "config.yaml") -> dict:
+    with open(path, "r") as file:
         data = yaml.load(file, Loader=yaml.FullLoader)
     return data
 
