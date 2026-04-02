@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "force_device": args.force_device,
         "verbose": args.verbose,
         "config_path": args.config,
-        "show_result": args.show_result,
+        "show_result": args.show_result or args.inference_only,
     }
 
     train(args)

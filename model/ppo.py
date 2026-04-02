@@ -85,6 +85,9 @@ class PPOAgent:
 
         self.isDiscrete = isinstance(baseEnv.action_space, gym.spaces.Discrete)
 
+        if args["inference_only"]:
+            self.continueFrom = self.name
+
         try:
             if os.path.exists(self.savePath):
                 if not force and self.continueFrom != self.name:
@@ -93,6 +96,9 @@ class PPOAgent:
                 elif self.continueFrom != self.name:
                     shutil.rmtree(self.logPath, ignore_errors=True)
                     shutil.rmtree(self.savePath)
+            elif self.continueFrom == self.name:
+                print("Model with this name does not exist and cannot be loaded")
+                exit()
             os.makedirs(self.savePath)
         except Exception as e:
             print(e)
