@@ -26,16 +26,19 @@ def initAgent(config:dict, args:dict, env):
     return agent
 
 
-def train(args:dict) -> PPOAgent:
+def train(args:dict, customEnv:gym.Env | None = None) -> PPOAgent:
     config = getConfig(args["config_path"])
 
     if args["force_device"] == "cuda" and not torch.cuda.is_available():
         raise Exception(f"Cannot use device '{args["force_device"]}' because it is unavailable")
     
-    env = GymEnv(
-        env_name=args["env_name"], 
-        device=args["force_device"] if args["force_device"] is not None else "cpu"
-    )
+    if customEnv is not None:
+        env = customEnv
+    else:
+        env = GymEnv(
+            env_name=args["env_name"], 
+            device=args["force_device"] if args["force_device"] is not None else "cpu"
+        )
 
     
     agent = initAgent(config=config, env=env, args=args)
