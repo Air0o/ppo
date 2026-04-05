@@ -8,7 +8,6 @@ from tensordict.nn import TensorDictModule
 from tensordict.nn.distributions import NormalParamExtractor
 from torch import nn
 
-from utils.paramCalculator import getParams
 from torchrl.envs.transforms import (
     TransformedEnv,
     ToTensorImage,

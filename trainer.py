@@ -10,9 +10,9 @@ import gymnasium as gym
 import torch
 import argparse
 import gymnasium_robotics
-from utils.configReader import getConfig
+from .utils.configReader import getConfig
 from torchrl.envs.libs.gym import GymEnv
-from model.ppo import PPOAgent
+from .model.ppo import PPOAgent
 
 gym.register_envs(gymnasium_robotics)
 
