@@ -10,9 +10,9 @@ import gymnasium as gym
 import torch
 import argparse
 import gymnasium_robotics
-from .utils.configReader import getConfig
+from utils.configReader import getConfig
 from torchrl.envs.libs.gym import GymEnv
-from .model.ppo import PPOAgent
+from model.ppo import PPOAgent
 
 gym.register_envs(gymnasium_robotics)
 
@@ -71,22 +71,25 @@ if __name__ == "__main__":
         description="Manager for PPO model training"
     )
 
-    parser.add_argument("env_name")
-    parser.add_argument("--name")
-    parser.add_argument("--continue-from")
-    parser.add_argument("--force-device")
-    parser.add_argument("--verbose")
-    parser.add_argument("--config")
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("--inference-only", action="store_true")
-    parser.add_argument("--show-result", action="store_true")
+    parser.add_argument("env_name", help="name of the environment")
+    parser.add_argument("name", help="name of the model to create/load")
+    parser.add_argument("--continue-from", help="name of the model to make a copy of")
+    parser.add_argument("--force-device", help="forces training on a specific device ('cpu', 'cuda')")
+    parser.add_argument("--verbose", help="logging level (0, 1, 2)")
+    parser.add_argument("--config", help="path to the config file for the model")
+    parser.add_argument("--force", action="store_true", help="overwrites the model if one with the same name already exists")
+    parser.add_argument("--inference-only", action="store_true", help="doesn't modify the model and only shows inference results")
+    parser.add_argument("--show-result", action="store_true", help="shows results when training finishes")
 
     args = parser.parse_args()
 
     if args.env_name is None:
         print("You need to specify the training environment!")
         exit()
-
+    if args.name is None:
+        print("You need to specify the model name!")
+        exit()
+        
     args = {
         "env_name": args.env_name,
         "continue_from_name": args.continue_from,
