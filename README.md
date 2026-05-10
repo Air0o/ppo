@@ -1,7 +1,6 @@
 # PPO
 ![humanoid](humanoid-ezgif.com-crop.gif)<br>
-*Trained for 100 million steps in the MuJoCo Humanoid environment.
-Roughly 4 days and 9 hours for lack of better hardware.*
+*Trained for 100 million steps in the MuJoCo Humanoid environment.<br>Training lasted roughly 4 days and 9 hours.*
 
 # Description
 Proximal Policy Optimization is a policy gradient Reinforcement Learning algorithm that iteratively improves a policy by collecting trajectories, estimating advantages, and optimizing a clipped surrogate objective which prevents updates from straying too far from the current policy, ensuring stable training.
